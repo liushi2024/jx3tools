@@ -1,19 +1,21 @@
-# README
+# 剑三按键工具
 
-## About
+`go` `wails` `vue` `DD驱动`
 
-This is the official Wails Vue-TS template.
 
-You can configure the project by editing `wails.json`. More information about the project settings can be found
-here: https://wails.io/docs/reference/project-config
+## 运行项目
 
-## Live Development
+> wails dev
 
-To run in live development mode, run `wails dev` in the project directory. This will run a Vite development
-server that will provide very fast hot reload of your frontend changes. If you want to develop in a browser
-and have access to your Go methods, there is also a dev server that runs on http://localhost:34115. Connect
-to this in your browser, and you can call your Go code from devtools.
+## 构建项目
 
-## Building
+> wails build
 
-To build a redistributable, production mode package, use `wails build`.
+## 生成文件
+> build 目录下的bin目录
+>
+> dd202x.8.x64.dll 是驱动文件不要动
+> 
+> start.mp3和stop.mp3是开启和停止按键的声效，根目录下的为开发环境预览，未作配置所以有两份，打包后bin目录需要全部放到一个文件夹下才能运行
+
+### ps:未在官方文档中找到UAC管理员权限的使用说明，所以需要右键使用管理员权限运行，或着在属性中设置
