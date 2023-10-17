@@ -2,6 +2,7 @@ package service
 
 import (
 	hook "github.com/robotn/gohook"
+	"math"
 )
 
 type HotKey struct {
@@ -41,39 +42,79 @@ func (s *HotKey) SyncFrontParse(parse int) string {
 func (s *HotKey) add() {
 	hooks := hook.Start()
 	defer hook.End()
+
 	for ev := range hooks {
 
 		//	监听键盘弹起
 		if ev.Kind == hook.KeyHold {
-			if ev.Rawcode == uint16(s.startKey) {
-				s.key.StartKeyThread()
-			}
-			if ev.Rawcode == uint16(s.stopKey) {
-				s.key.StopKeyThread()
+
+			if s.startKey != s.stopKey {
+				if ev.Rawcode == uint16(s.startKey) {
+					s.key.StartKeyThread()
+				}
+				if ev.Rawcode == uint16(s.stopKey) {
+					s.key.StopKeyThread()
+				}
+			} else {
+				if ev.Rawcode == uint16(s.startKey) {
+					if !s.key.isRun {
+						s.key.StartKeyThread()
+					} else {
+						s.key.StopKeyThread()
+					}
+				}
 			}
 			if ev.Rawcode == uint16(s.parseKey) {
 				s.key.isParse = !s.key.isParse
 			}
 		}
 
+		//监听鼠标点击
 		if ev.Kind == hook.MouseHold {
-			if ev.Button == uint16(s.startKey-900) {
-				s.key.StartKeyThread()
+			if s.startKey != s.stopKey {
+				if ev.Button == uint16(s.startKey-900) {
+					s.key.StartKeyThread()
+				}
+				if ev.Button == uint16(s.stopKey-900) {
+					s.key.StopKeyThread()
+				}
+			} else {
+				if ev.Button == uint16(s.startKey-900) {
+					if !s.key.isRun {
+						s.key.StartKeyThread()
+					} else {
+						s.key.StopKeyThread()
+					}
+				}
 			}
-			if ev.Button == uint16(s.stopKey-900) {
-				s.key.StopKeyThread()
-			}
+
 			if ev.Button == uint16(s.parseKey-900) {
 				s.key.isParse = !s.key.isParse
 			}
 		}
 
+		//监听鼠标滚轮
 		if ev.Kind == hook.MouseWheel {
-			if ev.Rotation == int32(s.startKey-907) {
-				s.key.StartKeyThread()
+
+			if math.Abs(float64(ev.Rotation)) != 1 {
+				return
 			}
-			if ev.Rotation == int32(s.stopKey-907) {
-				s.key.StopKeyThread()
+
+			if s.startKey != s.stopKey {
+				if ev.Rotation == int32(s.startKey-907) {
+					s.key.StartKeyThread()
+				}
+				if ev.Rotation == int32(s.stopKey-907) {
+					s.key.StopKeyThread()
+				}
+			} else {
+				if ev.Rotation == int32(s.startKey-907) {
+					if !s.key.isRun {
+						s.key.StartKeyThread()
+					} else {
+						s.key.StopKeyThread()
+					}
+				}
 			}
 		}
 

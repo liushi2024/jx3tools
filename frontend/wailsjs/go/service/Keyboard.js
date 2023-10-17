@@ -38,6 +38,6 @@ export function SyncFrontVoice(arg1) {
   return window['go']['service']['Keyboard']['SyncFrontVoice'](arg1);
 }
 
-export function ThreadExec(arg1, arg2, arg3, arg4) {
-  return window['go']['service']['Keyboard']['ThreadExec'](arg1, arg2, arg3, arg4);
+export function ThreadExec(arg1, arg2, arg3, arg4, arg5) {
+  return window['go']['service']['Keyboard']['ThreadExec'](arg1, arg2, arg3, arg4, arg5);
 }

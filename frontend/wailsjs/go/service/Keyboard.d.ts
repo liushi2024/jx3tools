@@ -12,7 +12,7 @@ export function Startup(arg1:context.Context):Promise<void>;
 
 export function StopKeyThread():Promise<void>;
 
-export function SyncFrontKey(arg1:Array<number>):Promise<string>;
+export function SyncFrontKey(arg1:string):Promise<string>;
 
 export function SyncFrontModel(arg1:number):Promise<string>;
 
@@ -20,4 +20,4 @@ export function SyncFrontMs(arg1:number):Promise<string>;
 
 export function SyncFrontVoice(arg1:boolean):Promise<string>;
 
-export function ThreadExec(arg1:number,arg2:number,arg3:number,arg4:number):Promise<void>;
+export function ThreadExec(arg1:number,arg2:number,arg3:number,arg4:number,arg5:number):Promise<void>;

@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"github.com/faiface/beep"
 	"github.com/faiface/beep/mp3"
@@ -9,6 +10,7 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 	"log"
 	"os"
+	"strconv"
 	"syscall"
 	"time"
 )
@@ -20,11 +22,16 @@ type Keyboard struct {
 	isParse  bool
 	frontMs  int
 	model    int
-	key      []int
+	key      []Key
 	voice    bool
 	dir      string
 	startMp3 *os.File
 	stopMp3  *os.File
+}
+
+type Key struct {
+	Key   interface{} `json:"key"`
+	KeyMs interface{} `json:"key_ms"`
 }
 
 func NewKeyboard() *Keyboard {
@@ -60,9 +67,19 @@ func (s *Keyboard) SyncFrontVoice(voice bool) string {
 }
 
 // SyncFrontKey 同步前端数据
-func (s *Keyboard) SyncFrontKey(key []int) string {
-	s.key = key
-	log.Println("[同步按键数据成功]", key)
+func (s *Keyboard) SyncFrontKey(keys string) string {
+
+	var keysStruct []Key
+
+	// 解析JSON字符串并将其填充到结构体数组
+	err := json.Unmarshal([]byte(keys), &keysStruct)
+	if err != nil {
+		log.Println("JSON解析失败:", err)
+		return "按键信息同步失败"
+	}
+
+	s.key = keysStruct
+	log.Println("[同步按键数据成功]", keysStruct)
 	return "success"
 }
 
@@ -75,7 +92,9 @@ func (s *Keyboard) StartKeyThread() {
 		runtime.EventsEmit(s.ctx, "start-thread", nil)
 		log.Println("[开始发送线程启动信号]")
 		for i := range s.key {
-			go s.ThreadExec(i, uintptr(s.key[i]), s.frontMs, s.model)
+			keyValue := uintptr(s.key[i].Key.(float64))
+			msValue, _ := strconv.Atoi(s.key[i].KeyMs.(string))
+			go s.ThreadExec(i, keyValue, s.frontMs, s.model, msValue)
 		}
 	}
 }
@@ -119,7 +138,7 @@ func (s *Keyboard) DllImport() string {
 }
 
 // ThreadExec 执行按键输出线程
-func (s *Keyboard) ThreadExec(id int, key uintptr, ms int, model int) {
+func (s *Keyboard) ThreadExec(id int, key uintptr, ms int, model int, keyMs int) {
 	proc := s.lib.NewProc("DD_key")
 	num := 0
 	if model == 0 && id != 0 {
@@ -131,12 +150,9 @@ func (s *Keyboard) ThreadExec(id int, key uintptr, ms int, model int) {
 			return
 		}
 		if !s.isParse {
-			if model == 1 {
-				fmt.Println("在输出", key, "间隔", ms)
-				proc.Call(key, 1)
-				proc.Call(key, 2)
-			} else {
-				nowKey := s.key[num]
+			//顺序按键
+			if model == 0 {
+				nowKey := s.key[num].Key.(float64)
 				fmt.Println("在输出", nowKey, "间隔", ms)
 				proc.Call(uintptr(nowKey), 1)
 				proc.Call(uintptr(nowKey), 2)
@@ -145,10 +161,21 @@ func (s *Keyboard) ThreadExec(id int, key uintptr, ms int, model int) {
 					num = 0
 				}
 			}
+			//连发按键
+			if model == 1 {
+				fmt.Println("在输出", key, "间隔", ms)
+				proc.Call(key, 1)
+				proc.Call(key, 2)
+			}
+
 		} else {
 			fmt.Println("在暂停")
 		}
-		time.Sleep(time.Duration(ms) * time.Millisecond)
+		if keyMs < 50 || model == 0 {
+			time.Sleep(time.Duration(ms) * time.Millisecond)
+		} else {
+			time.Sleep(time.Duration(keyMs) * time.Millisecond)
+		}
 	}
 }
 

@@ -2,7 +2,7 @@
   <div class="header" :style="{backgroundColor:isRunning?'#f5222d':'#409EFF'}">
     <div style="margin-left: 10px;">
       <el-icon size="21" style="margin-top: 13px;margin-right: 15px;"><SwitchFilled /></el-icon>
-      <div class="name">剑三小助手   -   <span style="font-size: 8px;">{{isRunning?"运行中":"未运行"}}</span></div>
+      <div class="name">按键小助手   -   <span style="font-size: 8px;">{{isRunning?"运行中":"未运行"}}</span></div>
 
     </div>
     <div v-if="true">
@@ -21,7 +21,7 @@
           style="width: 100%;font-size: 12px"
           height="calc(100vh - 160px)"
       >
-        <el-table-column width="55" label="启用" align="center">
+        <el-table-column width="52" label="启用" align="center">
           <template #default="scope">
             <el-switch
                 @change="onSaveKey()"
@@ -33,10 +33,19 @@
             />
           </template>
         </el-table-column>
-        <el-table-column prop="name" label="键符" width="50" align="center" show-overflow-tooltip/>
-        <el-table-column prop="status" label="操作" align="center">
+        <el-table-column prop="name" label="键符" width="50" align="center" show-overflow-tooltip>
           <template #default="scope">
-            <el-link type="danger" style="font-size: 13px" :disabled="isRunning" @click="onDelKey(scope.row)">删除</el-link>
+            <el-link>{{scope.row.name}}</el-link>
+          </template>
+        </el-table-column>
+        <el-table-column prop="status" label="操作" align="center"  show-overflow-tooltip>
+          <template #header>
+            <el-link type="warning" style="font-size: 12px" v-if="!isDel" @click="isDel = true">删除</el-link>
+            <el-link type="warning" style="font-size: 12px;" v-else @click="isDel = false">取消</el-link>
+          </template>
+          <template #default="scope">
+            <el-link type="danger" v-if="isDel" style="font-size: 12px" :disabled="isRunning" @click="onDelKey(scope.row)">删除</el-link>
+            <el-link type="success" v-else style="font-size: 12px" :disabled="isRunning" @click="changeMs(scope.row)">{{scope.row.key_ms==0?'未配置':scope.row.key_ms+'ms'}} </el-link>
           </template>
         </el-table-column>
       </el-table>
@@ -94,11 +103,21 @@
     </div>
   </div>
   <el-text class="mx-1" type="warning" style="float: left;margin-top: -15px;margin-left: 10px"><el-icon><InfoFilled /></el-icon>若无法使用，请<el-link @click="clear" type="danger" style="margin-top: -2.6px;margin-left: 2px">重置按键设置</el-link></el-text>
+  <el-link style="float:right;margin-top: -15px;margin-right: 10px" @click="drawer=true">使用说明</el-link>
+  <el-drawer v-model="drawer" :with-header="false" size="400" direction="btt" style="color: dimgray;">
+    <div style="float: right">
+      <el-button type="danger" @click="drawer = false">
+        <el-icon class="el-icon--left"><CircleCloseFilled /></el-icon>
+        <span>关闭</span>
+      </el-button>
+    </div>
+    <Info></Info>
+  </el-drawer>
 </template>
 <script setup lang="ts">
 import {onMounted, ref} from "vue";
 import {ElLoading, ElMessage, ElMessageBox} from "element-plus";
-import {Close, InfoFilled, Minus, SwitchFilled} from "@element-plus/icons-vue";
+import {CircleCloseFilled, Close, InfoFilled, Minus, SwitchFilled} from "@element-plus/icons-vue";
 import {
   DllImport,
   SyncFrontKey,
@@ -108,6 +127,7 @@ import {
 } from "../../../wailsjs/go/service/Keyboard";
 import {LogDebug, EventsOn, Quit,WindowMinimise} from "../../../wailsjs/runtime";
 import {SyncFrontParse, SyncFrontStart, SyncFrontStop} from "../../../wailsjs/go/service/HotKey";
+import Info from "../info/Info.vue";
 
 const vk:any = {'1': 201,'2': 202,'3': 203,'4': 204,'5': 205,'6': 206,'7': 207,'8': 208,'9': 209,'0': 210,
     'a': 401,'b': 505,'c': 503,'d': 403,'e': 303,'f': 404, 'g': 405,'h': 406,'i': 308,'j': 407, 'k': 408,
@@ -173,8 +193,12 @@ const vq:any = {'0':'48',
   'Shift':'4',
   '鼠标侧键1': '904',
   '鼠标侧键2': '905',
+  '鼠标中键': '903',
   '滚轮上': '906',
-  '滚轮下': '908'}
+  '滚轮下': '908',
+  '空': "99999"}
+  const isDel = ref(false)
+  const drawer = ref(false)
   const start = ref("")
   const stop = ref("")
   const parse = ref("")
@@ -229,7 +253,7 @@ const vq:any = {'0':'48',
       ElMessage.warning("此键已被停止键占用！")
       return;
     }
-    keyList.value.push({name:preKey.value,value:vk[preKey.value],used:true})
+    keyList.value.push({name:preKey.value,value:vk[preKey.value],used:true,key_ms:"0"})
     onSaveKey()
   }
 
@@ -243,7 +267,7 @@ const vq:any = {'0':'48',
             disabled = true;
           }
         }
-        if(start.value == vq[key]||stop.value == vq[key]||parse.value == vq[key]){
+        if(parse.value == vq[key]){
           disabled = true
         }
         keyOptions.value.push({label:key,value:vq[key],disabled:disabled})
@@ -285,6 +309,27 @@ const vq:any = {'0':'48',
     await initData()
     localStorage.setItem("keys",JSON.stringify(keyList.value))
   }
+
+  const changeMs = (val: { name: any;key_ms:number })=>{
+    ElMessageBox.prompt(`当前值：${val.key_ms}`,`键[${val.name}]的间隔时间`, {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      inputPattern:
+          /^(5[0-9]|[6-9][0-9]|[1-9][0-9]{2,})$/,
+      inputErrorMessage: '间隔时间必须为数字且>50',
+    })
+        .then(async ({value}) => {
+          for (let i = 0; i < keyList.value.length; i++) {
+            if (keyList.value[i].name == val.name) {
+              keyList.value[i].key_ms = value
+            }
+          }
+          await initData()
+          localStorage.setItem("keys", JSON.stringify(keyList.value))
+        })
+        .catch(() => {})
+  }
+
   const onDelKey=async (value: { name: any; }) => {
     for (let i = 0; i < keyList.value.length; i++) {
       if (keyList.value[i].name == value.name) {
@@ -308,10 +353,10 @@ const vq:any = {'0':'48',
     let temp = []
     for (let i = 0; i < keyList.value.length; i++) {
       if (Boolean(keyList.value[i].used)) {
-        temp.push(keyList.value[i].value)
+        temp.push({key:keyList.value[i].value,key_ms:keyList.value[i].key_ms})
       }
     }
-    await SyncFrontKey(temp)
+    await SyncFrontKey(JSON.stringify(temp))
   }
 
   const clear=()=>{
@@ -344,7 +389,8 @@ const vq:any = {'0':'48',
     parse.value = initParam("parse",vq['F11'])
     model.value = Number(initParam("model","0"))
     ms.value = Number(initParam("ms","50"))
-    voice.value = Boolean(initParam("voice","true"))
+    voice.value = initParam("voice","true")=="true"
+
     let keys =  localStorage.getItem("keys")
     if(keys == undefined){
       keyList.value = []
@@ -370,6 +416,9 @@ const vq:any = {'0':'48',
 </script>
 <style lang="less" scoped>
   @import "../../assets/style/theme";
+  *{
+    user-select: none;
+  }
   .header{
     --wails-draggable:drag;
     width: 100%;
