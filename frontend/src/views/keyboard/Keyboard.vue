@@ -1,13 +1,18 @@
 <template>
-  <div class="header" :style="{backgroundColor:isRunning?'#f5222d':'#409EFF'}">
+  <audio id="startMp3" controls style="display: none">
+    <source src="../../../public/start.mp3" type="audio/mpeg">
+  </audio>
+  <audio id="stopMp3" controls style="display: none">
+    <source src="../../../public/stop.mp3" type="audio/mpeg">
+  </audio>
+  <div class="header" :style="{backgroundColor:isRunning?'#f5222d':'#409EFF',}">
     <div style="margin-left: 10px;">
       <el-icon size="21" style="margin-top: 13px;margin-right: 15px;"><SwitchFilled /></el-icon>
       <div class="name">按键小助手   -   <span style="font-size: 8px;">{{isRunning?"运行中":"未运行"}}</span></div>
-
     </div>
     <div v-if="true">
       <el-icon class="btn-sys" size="small" style="margin-right: 10px" @click="sys_event('min')"><Minus /></el-icon>
-      <el-icon class="btn-sys" size="small" style="margin-right: 10px" @click="sys_event('close')"><Close /></el-icon>
+      <el-icon class="btn-sys" size="small" style="margin-right: 10px" @click="sys_event('hide')"><Close /></el-icon>
     </div>
   </div>
   <div style="padding: 10px;overflow: hidden;display: flex;justify-content: space-between ">
@@ -53,7 +58,7 @@
     <div class="right-box">
       <el-button class="input-btn" style="margin-bottom: 35px;width: 100%" :disabled="isRunning" @click="addKey">添加</el-button>
       <el-divider content-position="left" style="width: 100%;margin: 0 auto 20px;">开启</el-divider>
-      <el-select v-model="start" class="m-2" filterable placeholder="开启键" :disabled="isRunning" :key="1" size="large" style="width: 100%" @visible-change="filterKey" @change="onSaveHotKey('start')">
+      <el-select placement="bottom" v-model="start" popper-class="custom-popper-class" class="m-2" filterable placeholder="开启键" :disabled="isRunning" :key="1" size="large" style="width: 100%" @visible-change="filterKey" @change="onSaveHotKey('start')">
         <el-option
             v-for="item in keyOptions"
             :key="item.value"
@@ -62,6 +67,7 @@
             :disabled="item.disabled"
         />
       </el-select>
+      <div v-show="model != 2">
       <el-divider content-position="left" style="width: 100%;margin: 20px auto 20px;">停止</el-divider>
       <el-select v-model="stop" class="m-2" filterable placeholder="停止键" :disabled="isRunning" size="large" style="width: 100%;" @visible-change="filterKey" @change="onSaveHotKey('stop')">
         <el-option
@@ -82,6 +88,11 @@
             :disabled="item.disabled"
         />
       </el-select>
+      </div>
+      <div v-show="model == 2" style="height: 144px;font-size: 14px">
+          <div style="margin-top: 20px;color: red">按压模式暂只支持键盘区！</div>
+          <div style="margin-top: 20px;color: red">Ctrl、Alt、Shift可能存在冲突</div>
+      </div>
       <el-divider content-position="left" style="width: 100%;margin: 20px auto 20px;">模式</el-divider>
       <el-select v-model="model" class="m-2" filterable placeholder="模式" :disabled="isRunning" size="large" style="width: 100%;" @change="onSaveHotKey('model')">
         <el-option
@@ -125,7 +136,15 @@ import {
   SyncFrontMs,
   SyncFrontVoice,
 } from "../../../wailsjs/go/service/Keyboard";
-import {LogDebug, EventsOn, Quit,WindowMinimise} from "../../../wailsjs/runtime";
+import {
+  LogDebug,
+  EventsOn,
+  Quit,
+  WindowHide,
+  WindowMinimise,
+  WindowSetTitle,
+  WindowGetPosition, WindowSetPosition
+} from "../../../wailsjs/runtime";
 import {SyncFrontParse, SyncFrontStart, SyncFrontStop} from "../../../wailsjs/go/service/HotKey";
 import Info from "../info/Info.vue";
 
@@ -137,66 +156,17 @@ const vk:any = {'1': 201,'2': 202,'3': 203,'4': 204,'5': 205,'6': 206,'7': 207,'
     'F1':101,'F2':102,'F3':103,'F4':104,'F5':105,'F6':106,'F7':107,'F8':108,'F9':109,'F10':110,'F11':111,
     'CapsLock':400,'Shift':500,'Ctrl':600,'Alt':602,'Tab':300,"ScrollLock":701,'pause':702,'Insert':703,'Home':704,'PageUp':705,'Delete':706,'End':707,'PageDown':708,
     'ArrowUp':709,'ArrowLeft':710,'ArrowDown':711,'ArrowRight':712}
-const vq:any = {'0':'48',
-  '1':'49',
-  '2':'50',
-  '3':'51',
-  '4':'52',
-  '5':'53',
-  '6':'54',
-  '7':'55',
-  '8':'56',
-  '9':'57',
-  'A':'65',
-  'B':'66',
-  'C':'67',
-  'D':'68',
-  'E':'69',
-  'F':'70',
-  'G':'71',
-  'H':'72',
-  'I':'73',
-  'J':'74',
-  'K':'75',
-  'L':'76',
-  'M':'77',
-  'N':'78',
-  'O':'79',
-  'P':'80',
-  'Q':'81',
-  'R':'82',
-  'S':'83',
-  'T':'84',
-  'U':'85',
-  'V':'86',
-  'W':'87',
-  'X':'88',
-  'Y':'89',
-  'Z':'90',
-  'F1':'112',
-  'F2':'113',
-  'F3':'114',
-  'F4':'115',
-  'F5':'116',
-  'F6':'117',
-  'F7':'118',
-  'F8':'119',
-  'F9':'120',
-  'F10':'121',
-  'F11':'122',
-  'Left':'37',
-  'Right':'38',
-  'Up':'39',
-  'Down':'40',
-  'Alt':'1',
-  'Ctrl':'2',
-  'Shift':'4',
-  '鼠标侧键1': '904',
-  '鼠标侧键2': '905',
-  '鼠标中键': '903',
-  '滚轮上': '906',
-  '滚轮下': '908',
-  '空': "99999"}
+const vq:any = {
+  '0':'48', '1':'49', '2':'50', '3':'51', '4':'52', '5':'53', '6':'54', '7':'55', '8':'56', '9':'57',
+  'A':'65', 'B':'66', 'C':'67', 'D':'68', 'E':'69', 'F':'70', 'G':'71', 'H':'72', 'I':'73', 'J':'74', 'K':'75', 'L':'76', 'M':'77', 'N':'78',
+  'O':'79', 'P':'80', 'Q':'81', 'R':'82', 'S':'83', 'T':'84', 'U':'85', 'V':'86', 'W':'87', 'X':'88', 'Y':'89', 'Z':'90',
+  'F1':'112', 'F2':'113', 'F3':'114', 'F4':'115', 'F5':'116', 'F6':'117', 'F7':'118', 'F8':'119', 'F9':'120', 'F10':'121', 'F11':'122',
+  '-':'189', '+':'187', '~':'192', '\\':'220', ';':'186', '\'(引号)':'222', '[':'219', ']':'221', '，':'188', '。':'190', '/':'191',
+  'Left':'37', 'Right':'39', 'Up':'38', 'Down':'40',
+  'Left Alt':'164', 'Right Alt':'165', 'Left Ctrl':'162', 'Right Ctrl':'163', 'Left Shift':'160', 'Right Shift':'161',
+  'PrtSc':'44', 'ScrollLock':'145', 'Pause':'19', 'Insert':'45', 'Delete':'46', 'Home':'36', 'End':'35', 'PgUp':'33', 'PgDown':'34',
+  '鼠标侧键1': '904', '鼠标侧键2': '905', '滚轮上': '906', '滚轮下': '908', '空': "99999"}
+
   const isDel = ref(false)
   const drawer = ref(false)
   const start = ref("")
@@ -206,18 +176,41 @@ const vq:any = {'0':'48',
   const keyList = ref<any[]>([])
   const ms = ref(0)
   const keyOptions = ref<any[]>([])
-  const modelOption = ref([{label:'顺序模式',value:0},{label: '连发模式',value:1}])
+
+  const modelOption = ref([
+    {label: '顺序模式',value: 0},
+    {label: '连发模式',value: 1},
+    {label: '按压模式',value: 2}
+  ])
+
   const preKey = ref("")
   const voice = ref(false)
   const isRunning = ref(false)
 
+  const initWindowPosition = () => {
+    let x = localStorage.getItem("x") || ""
+    let y = localStorage.getItem("y") || ""
+    if (!(x == "" || y == "")) {
+      WindowSetPosition(Number(x), Number(y))
+    }
+  }
+  initWindowPosition()
+  /**
+   * header点击事件
+   * @param val
+   */
   const sys_event = (val: any)=>{
     switch(val){
       case 'min':WindowMinimise();break;
-      case 'close':Quit();Quit();break;
+      case 'hide':WindowHide();WindowGetPosition().then(res=>{
+        localStorage.setItem("x",res.x.toString())
+        localStorage.setItem("y",res.y.toString())
+      });break;
       default:console.log("click btn_sys error");break;
     }
   }
+
+  //预览输入按键
   const preKeys = ()=> {
     const loading = ElLoading.service({
       lock: true,
@@ -234,29 +227,32 @@ const vq:any = {'0':'48',
     }
   }
 
+  //添加按键
   const addKey = ()=>{
+    if(preKey.value==""){
+      return;
+    }
     if(vk[preKey.value]==undefined){
-      ElMessage.warning(preKey.value+"键暂不支持！")
+      ElMessage.warning({
+        message: preKey.value+"键暂不支持！",
+        offset: 50
+      })
       return;
     }
     for (let i = 0; i < keyList.value.length; i++) {
       if(keyList.value[i].name == preKey.value){
-        ElMessage.warning(preKey.value+"键冲突！")
+        ElMessage.warning({
+          message: preKey.value+"键冲突！",
+          offset: 50
+        })
         return ;
       }
-    }
-    if(vk[preKey.value] == start.value){
-      ElMessage.warning("此键已被开启键占用！")
-      return;
-    }
-    if(vk[preKey.value] == stop.value){
-      ElMessage.warning("此键已被停止键占用！")
-      return;
     }
     keyList.value.push({name:preKey.value,value:vk[preKey.value],used:true,key_ms:"0"})
     onSaveKey()
   }
 
+  //过滤快捷键列表
   const  filterKey=(event: any)=>{
     if(event){
       keyOptions.value = []
@@ -275,6 +271,7 @@ const vq:any = {'0':'48',
     }
   }
 
+  //保存快捷键
   const onSaveHotKey = async (val: string) => {
     let value: any = ""
     if (val == "start") {
@@ -305,13 +302,15 @@ const vq:any = {'0':'48',
     localStorage.setItem(val, value)
   }
 
+  //保存按键区键符及延迟值
   const onSaveKey=async () => {
     await initData()
     localStorage.setItem("keys",JSON.stringify(keyList.value))
   }
 
+  //修改延迟值事件
   const changeMs = (val: { name: any;key_ms:number })=>{
-    ElMessageBox.prompt(`当前值：${val.key_ms}`,`键[${val.name}]的间隔时间`, {
+    ElMessageBox.prompt(`当前值：${val.key_ms} (连发模式生效)`,`键[${val.name}]的间隔时间`, {
       confirmButtonText: '确定',
       cancelButtonText: '取消',
       inputPattern:
@@ -330,6 +329,7 @@ const vq:any = {'0':'48',
         .catch(() => {})
   }
 
+  //删除键符事件
   const onDelKey=async (value: { name: any; }) => {
     for (let i = 0; i < keyList.value.length; i++) {
       if (keyList.value[i].name == value.name) {
@@ -340,6 +340,7 @@ const vq:any = {'0':'48',
     localStorage.setItem("keys", JSON.stringify(keyList.value))
   }
 
+  //初始化参数封装函数
   const initParam = (key: string, value: string) =>{
     let keyStr =  localStorage.getItem(key)
     if(keyStr == undefined){
@@ -349,6 +350,7 @@ const vq:any = {'0':'48',
     return keyStr
   }
 
+  //初始化键符
   const initData = async () => {
     let temp = []
     for (let i = 0; i < keyList.value.length; i++) {
@@ -359,6 +361,7 @@ const vq:any = {'0':'48',
     await SyncFrontKey(JSON.stringify(temp))
   }
 
+  //清除快捷键及键符配置
   const clear=()=>{
     ElMessageBox.confirm(
         '将清除所有按键设置，重置后请重新打开程序',
@@ -376,21 +379,37 @@ const vq:any = {'0':'48',
         .catch(() => {})
   }
 
-  onMounted(async ()=>{
+  //开始结束音乐播放
+  const playMusic=(isStart:boolean)=>{
+    if(!voice.value){
+      return
+    }
+    const start = document.getElementById('startMp3') as HTMLAudioElement; // 强制转换为 HTMLAudioElement
+    const stop = document.getElementById('stopMp3') as HTMLAudioElement; // 强制转换为 HTMLAudioElement
+    if(isStart){
+      start.currentTime = 0;
+      stop.pause()
+      start.play()
+    } else {
+      stop.currentTime = 0;
+      start.pause()
+      stop.play()
+    }
+  }
+  //初始化驱动文件
+  const DllInit = async () => {
     let res = await DllImport()
-    res == "success"?LogDebug("驱动注入成功"):ElMessage.warning(res);
-    const loading = ElLoading.service({
-      lock: true,
-      text: '正在加载，请稍后',
-      background: 'rgba(255, 255, 255, 0.9)',
-    })
+    res == "success" ? LogDebug("驱动注入成功") : ElMessage.warning(res);
+  }
+
+  //初始化快捷键及键符
+  const initKeys=()=>{
     start.value = initParam("start",vq['F9'])
     stop.value = initParam("stop",vq['F10'])
     parse.value = initParam("parse",vq['F11'])
     model.value = Number(initParam("model","0"))
     ms.value = Number(initParam("ms","50"))
     voice.value = initParam("voice","true")=="true"
-
     let keys =  localStorage.getItem("keys")
     if(keys == undefined){
       keyList.value = []
@@ -398,18 +417,36 @@ const vq:any = {'0':'48',
       keyList.value = JSON.parse(keys)
     }
     filterKey(true)
+  }
+
+
+
+  //同步快捷键及键符到后台
+  const syncKeys=async () => {
     await SyncFrontStart(Number(start.value))
     await SyncFrontStop(Number(stop.value))
     await SyncFrontParse(Number(parse.value))
     await SyncFrontMs(ms.value)
     await SyncFrontModel(model.value)
-    await SyncFrontVoice(voice.value)
+  }
+
+  onMounted(async ()=>{
+    const loading = ElLoading.service({
+      lock: true,
+      text: '正在加载，请稍后',
+      background: 'rgba(255, 255, 255, 0.9)',
+    })
+    initKeys();
     await initData()
+    await DllInit();
+    await syncKeys()
     EventsOn("start-thread",()=>{
       isRunning.value = true
+      playMusic(true)
     })
     EventsOn("stop-thread",()=>{
       isRunning.value = false
+      playMusic(false)
     })
     loading.close()
   })

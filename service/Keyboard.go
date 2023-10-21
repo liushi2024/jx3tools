@@ -2,14 +2,14 @@ package service
 
 import (
 	"context"
+	_ "embed"
 	"encoding/json"
 	"fmt"
-	"github.com/faiface/beep"
-	"github.com/faiface/beep/mp3"
-	"github.com/faiface/beep/speaker"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
+	"io/ioutil"
 	"log"
 	"os"
+	"path/filepath"
 	"strconv"
 	"syscall"
 	"time"
@@ -25,6 +25,7 @@ type Keyboard struct {
 	key      []Key
 	voice    bool
 	dir      string
+	dll      []byte
 	startMp3 *os.File
 	stopMp3  *os.File
 }
@@ -38,10 +39,11 @@ func NewKeyboard() *Keyboard {
 	return &Keyboard{}
 }
 
-func (s *Keyboard) Startup(ctx context.Context) {
+func (s *Keyboard) Startup(ctx context.Context, dll []byte) {
 	s.ctx = ctx
-	logfile, _ := os.OpenFile("log.txt", os.O_TRUNC|os.O_CREATE, 0744)
-	log.SetOutput(logfile)
+	s.dll = dll
+	//logfile, _ := os.OpenFile("log.txt", os.O_TRUNC|os.O_CREATE, 0744)
+	//log.SetOutput(logfile)
 	log.Println("[开启启动按键模块]")
 }
 
@@ -88,7 +90,6 @@ func (s *Keyboard) StartKeyThread() {
 	s.isParse = false
 	if !s.isRun {
 		s.isRun = true
-		go s.playMp3(true)
 		runtime.EventsEmit(s.ctx, "start-thread", nil)
 		log.Println("[开始发送线程启动信号]")
 		for i := range s.key {
@@ -103,7 +104,6 @@ func (s *Keyboard) StartKeyThread() {
 func (s *Keyboard) StopKeyThread() {
 	if s.isRun {
 		s.isRun = false
-		go s.playMp3(false)
 		log.Println("[开始发送线程退出信号]")
 		runtime.EventsEmit(s.ctx, "stop-thread", nil)
 	}
@@ -117,16 +117,14 @@ func (s *Keyboard) ParseKeyThread() {
 // DllImport 导入驱动
 func (s *Keyboard) DllImport() string {
 	s.voice = false
-	dir, _ := os.Getwd()
-	s.dir = dir
-	dllPath := dir + "\\dd202x.8.x64.dll"
-	log.Println("[开始挂载驱动文件,路径:", dllPath, "]")
-	//判断文件存不存在
-	if _, err := os.Stat(dllPath); err != nil {
-		log.Println("[驱动挂载失败][", err.Error(), "]")
-	}
-	//load dll,使用懒加载模式，也就是真正调用 API 的时候才会加载
-	s.lib = syscall.NewLazyDLL(dllPath)
+	// 获取临时目录路径
+	tempDir := os.TempDir()
+
+	tmpDLLPath := filepath.Join(tempDir, "dllfile.dll")
+	_ = ioutil.WriteFile(tmpDLLPath, s.dll, 0644)
+
+	defer os.Remove(tmpDLLPath)
+	s.lib = syscall.NewLazyDLL(tmpDLLPath)
 	proc := s.lib.NewProc("DD_btn")
 	res, _, _ := proc.Call(0)
 	if int(res) != 1 {
@@ -168,44 +166,20 @@ func (s *Keyboard) ThreadExec(id int, key uintptr, ms int, model int, keyMs int)
 				proc.Call(key, 2)
 			}
 
+			//按压按键
+			if model == 2 {
+				fmt.Println("在输出", key, "间隔", ms)
+				proc.Call(key, 1)
+				proc.Call(key, 2)
+			}
+
 		} else {
 			fmt.Println("在暂停")
 		}
-		if keyMs < 50 || model == 0 {
+		if keyMs < 50 || model == 0 || model == 2 {
 			time.Sleep(time.Duration(ms) * time.Millisecond)
 		} else {
 			time.Sleep(time.Duration(keyMs) * time.Millisecond)
 		}
 	}
-}
-
-// 播放开始和停止音乐
-func (s *Keyboard) playMp3(isStart bool) {
-	if !s.voice {
-		return
-	}
-	fileStr := "\\start.mp3"
-	if !isStart {
-		fileStr = "\\stop.mp3"
-	}
-	mp3File, err := os.Open(s.dir + fileStr)
-	if err != nil {
-		log.Fatal(err)
-	}
-	println(mp3File.Name())
-	stream, format, err := mp3.Decode(mp3File)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer stream.Close()
-	err2 := speaker.Init(format.SampleRate, format.SampleRate.N(time.Second/10))
-	done := make(chan bool)
-
-	println("开始播放音乐", err2)
-
-	speaker.Play(beep.Seq(stream, beep.Callback(func() {
-		done <- true
-	})))
-	<-done
-	println("音乐播放结束")
 }

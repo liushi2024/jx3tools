@@ -8,7 +8,7 @@ export function ParseKeyThread():Promise<void>;
 
 export function StartKeyThread():Promise<void>;
 
-export function Startup(arg1:context.Context):Promise<void>;
+export function Startup(arg1:context.Context,arg2:Array<number>):Promise<void>;
 
 export function StopKeyThread():Promise<void>;
 

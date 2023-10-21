@@ -14,8 +14,8 @@ export function StartKeyThread() {
   return window['go']['service']['Keyboard']['StartKeyThread']();
 }
 
-export function Startup(arg1) {
-  return window['go']['service']['Keyboard']['Startup'](arg1);
+export function Startup(arg1, arg2) {
+  return window['go']['service']['Keyboard']['Startup'](arg1, arg2);
 }
 
 export function StopKeyThread() {
