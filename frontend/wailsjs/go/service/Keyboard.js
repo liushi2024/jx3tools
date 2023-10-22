@@ -6,6 +6,14 @@ export function DllImport() {
   return window['go']['service']['Keyboard']['DllImport']();
 }
 
+export function ExportPlans(arg1) {
+  return window['go']['service']['Keyboard']['ExportPlans'](arg1);
+}
+
+export function ImportPlans() {
+  return window['go']['service']['Keyboard']['ImportPlans']();
+}
+
 export function ParseKeyThread() {
   return window['go']['service']['Keyboard']['ParseKeyThread']();
 }
@@ -22,6 +30,10 @@ export function StopKeyThread() {
   return window['go']['service']['Keyboard']['StopKeyThread']();
 }
 
+export function SyncDisabled(arg1) {
+  return window['go']['service']['Keyboard']['SyncDisabled'](arg1);
+}
+
 export function SyncFrontKey(arg1) {
   return window['go']['service']['Keyboard']['SyncFrontKey'](arg1);
 }
@@ -34,10 +46,10 @@ export function SyncFrontMs(arg1) {
   return window['go']['service']['Keyboard']['SyncFrontMs'](arg1);
 }
 
-export function SyncFrontVoice(arg1) {
-  return window['go']['service']['Keyboard']['SyncFrontVoice'](arg1);
+export function SyncParseType(arg1) {
+  return window['go']['service']['Keyboard']['SyncParseType'](arg1);
 }
 
-export function ThreadExec(arg1, arg2, arg3, arg4, arg5) {
-  return window['go']['service']['Keyboard']['ThreadExec'](arg1, arg2, arg3, arg4, arg5);
+export function ThreadExec(arg1, arg2, arg3, arg4) {
+  return window['go']['service']['Keyboard']['ThreadExec'](arg1, arg2, arg3, arg4);
 }

@@ -25,11 +25,12 @@ func main() {
 	app := NewApp()
 	keyboard := service.NewKeyboard()
 	hotKey := service.NewHotKey()
+	mp3 := service.NewMusic()
 	// Create application with options
 	err := wails.Run(&options.App{
 		Title:         "按键小助手",
 		Width:         330,
-		Height:        600,
+		Height:        650,
 		DisableResize: true,
 		Frameless:     true,
 		AssetServer: &assetserver.Options{
@@ -39,6 +40,7 @@ func main() {
 			app.startup(ctx)
 			keyboard.Startup(ctx, dll)
 			hotKey.Startup(keyboard)
+			mp3.Startup(ctx)
 			// 启动 systray
 			systray.Run(func() {
 				// 在任务栏上创建一个图标
@@ -74,6 +76,7 @@ func main() {
 			app,
 			keyboard,
 			hotKey,
+			mp3,
 		},
 	})
 

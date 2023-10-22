@@ -144,8 +144,22 @@ func (s *HotKey) keyHold(ev hook.Event) {
 				}
 			}
 		}
-		if ev.Rawcode == uint16(s.parseKey) {
-			s.key.isParse = !s.key.isParse
+		if s.key.parseType == "0" {
+			if ev.Rawcode == uint16(s.parseKey) {
+				s.key.isParse = !s.key.isParse
+			}
+		}
+		if s.key.parseType == "1" {
+			if ev.Rawcode == uint16(s.parseKey) {
+				s.key.isParse = false
+			}
+		}
+	}
+	if ev.Kind == hook.KeyHold {
+		if s.key.parseType == "1" {
+			if ev.Rawcode == uint16(s.parseKey) {
+				s.key.isParse = true
+			}
 		}
 	}
 
@@ -166,30 +180,6 @@ func (s *HotKey) keyPress(ev hook.Event) {
 			if s.key.isRun {
 				s.key.StopKeyThread()
 			}
-		}
-	}
-
-	//监听鼠标点击
-	if ev.Kind == hook.MouseDown {
-		if s.startKey != s.stopKey {
-			if ev.Button == uint16(s.startKey-900) {
-				s.key.StartKeyThread()
-			}
-			if ev.Button == uint16(s.stopKey-900) {
-				s.key.StopKeyThread()
-			}
-		} else {
-			if ev.Button == uint16(s.startKey-900) {
-				if !s.key.isRun {
-					s.key.StartKeyThread()
-				} else {
-					s.key.StopKeyThread()
-				}
-			}
-		}
-
-		if ev.Button == uint16(s.parseKey-900) {
-			s.key.isParse = true
 		}
 	}
 }
