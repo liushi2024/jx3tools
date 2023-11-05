@@ -32,8 +32,10 @@ type Keyboard struct {
 }
 
 type Key struct {
-	Key   interface{} `json:"key"`
-	KeyMs interface{} `json:"key_ms"`
+	Key      interface{} `json:"key"`
+	KeyMs    interface{} `json:"key_ms"`
+	KeyValue interface{} `json:"key_value"`
+	isPress  bool
 }
 
 func NewKeyboard() *Keyboard {
@@ -113,14 +115,27 @@ func (s *Keyboard) StartKeyThread() {
 func (s *Keyboard) StopKeyThread() {
 	if s.isRun {
 		s.isRun = false
-		log.Println("[开始发送线程退出信号]")
 		runtime.EventsEmit(s.ctx, "stop-thread", nil)
+		log.Println("[开始发送线程退出信号]")
 	}
 }
 
 // ParseKeyThread 暂停线程
 func (s *Keyboard) ParseKeyThread() {
 	s.isParse = !s.isParse
+	runtime.EventsEmit(s.ctx, "change-key", nil)
+}
+
+// ParseStartThread 暂停线程
+func (s *Keyboard) ParseStartThread() {
+	s.isParse = true
+	runtime.EventsEmit(s.ctx, "change-key", nil)
+}
+
+// ParseStopThread 暂停线程
+func (s *Keyboard) ParseStopThread() {
+	s.isParse = false
+	runtime.EventsEmit(s.ctx, "change-key", nil)
 }
 
 // DllImport 导入驱动
@@ -151,12 +166,15 @@ func (s *Keyboard) ThreadExec(id int, key uintptr, ms int, model int) {
 		return
 	}
 	num := id
+	s.key[id].isPress = false
 	log.Println("[线程已启动][id:", uintptr(id), "][key:", key, "][ms:", uintptr(ms), "][model:", uintptr(model), "]")
 	for {
 		if !s.isRun {
+			log.Println("[线程已退出][id:", uintptr(id), "][key:", key, "][ms:", uintptr(ms), "][model:", uintptr(model), "]")
 			return
 		}
 		if !s.isParse {
+
 			//顺序按键
 			if model == 0 {
 				nowKey := s.key[num].Key.(float64)
@@ -167,26 +185,30 @@ func (s *Keyboard) ThreadExec(id int, key uintptr, ms int, model int) {
 					num = 0
 				}
 			}
+
 			//连发按键
 			if model == 1 {
 				proc.Call(key, 1)
 				proc.Call(key, 2)
 			}
+
 			//按压按键
 			if model == 2 {
-				proc.Call(key, 1)
-				proc.Call(key, 2)
+				if s.key[id].isPress {
+					proc.Call(key, 1)
+					proc.Call(key, 2)
+				}
 			}
-			log.Println("[model:", model, "][key:", key, "]", ms)
+
 		} else {
 			log.Println("[暂停执行]")
 		}
 		msValue, _ := strconv.Atoi(s.key[num].KeyMs.(string))
 		if msValue < 50 || s.disabled == "0" {
-			log.Println("统一延迟生效", ms, s.disabled)
+			//log.Println("统一延迟生效", ms, s.disabled)
 			time.Sleep(time.Duration(ms) * time.Millisecond)
 		} else {
-			log.Println("独立延迟生效", msValue, s.disabled)
+			//log.Println("独立延迟生效", msValue, s.disabled)
 			time.Sleep(time.Duration(msValue) * time.Millisecond)
 		}
 	}

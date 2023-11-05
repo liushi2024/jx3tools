@@ -11,6 +11,7 @@ type HotKey struct {
 	stopKey  int
 	parseKey int
 	key      *Keyboard
+	sk       int
 }
 
 func NewHotKey() *HotKey {
@@ -66,11 +67,7 @@ func (s *HotKey) processEvent(ev hook.Event) {
 	s.listenMouse(ev)
 }
 func (s *HotKey) listenKeyBoard(ev hook.Event) {
-	if s.key.model == 2 {
-		s.keyPress(ev)
-	} else {
-		s.keyHold(ev)
-	}
+	s.keyHold(ev)
 }
 
 func (s *HotKey) listenMouse(ev hook.Event) {
@@ -94,13 +91,12 @@ func (s *HotKey) listenMouse(ev hook.Event) {
 		}
 
 		if ev.Button == uint16(s.parseKey-900) {
-			s.key.isParse = !s.key.isParse
+			s.key.ParseKeyThread()
 		}
 	}
 
 	//监听鼠标滚轮
 	if ev.Kind == hook.MouseWheel {
-
 		if math.Abs(float64(ev.Rotation)) != 1 {
 			return
 		}
@@ -146,40 +142,21 @@ func (s *HotKey) keyHold(ev hook.Event) {
 		}
 		if s.key.parseType == "0" {
 			if ev.Rawcode == uint16(s.parseKey) {
-				s.key.isParse = !s.key.isParse
+				s.key.ParseKeyThread()
 			}
 		}
 		if s.key.parseType == "1" {
 			if ev.Rawcode == uint16(s.parseKey) {
-				s.key.isParse = false
+				s.key.ParseStopThread()
 			}
 		}
 	}
 	if ev.Kind == hook.KeyHold {
 		if s.key.parseType == "1" {
 			if ev.Rawcode == uint16(s.parseKey) {
-				s.key.isParse = true
+				s.key.ParseStartThread()
 			}
 		}
 	}
 
-}
-
-// 键盘按压模式
-func (s *HotKey) keyPress(ev hook.Event) {
-	//	监听键盘弹起
-	if ev.Kind == hook.KeyHold {
-		if ev.Rawcode == uint16(s.startKey) && !s.key.isRun {
-			if !s.key.isRun {
-				s.key.StartKeyThread()
-			}
-		}
-	}
-	if ev.Kind == hook.KeyUp {
-		if ev.Rawcode == uint16(s.startKey) {
-			if s.key.isRun {
-				s.key.StopKeyThread()
-			}
-		}
-	}
 }

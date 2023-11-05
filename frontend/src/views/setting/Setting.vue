@@ -94,7 +94,7 @@
     VideoPlay
   } from "@element-plus/icons-vue";
   import {ElMessage, ElMessageBox} from "element-plus";
-  import {LogDebug, WindowReloadApp} from "../../../wailsjs/runtime";
+  import {WindowReloadApp} from "../../../wailsjs/runtime";
   import {ExportPlans, ImportPlans} from "../../../wailsjs/go/service/Keyboard";
 
   defineProps({

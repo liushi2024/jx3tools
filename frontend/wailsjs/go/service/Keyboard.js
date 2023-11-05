@@ -18,6 +18,14 @@ export function ParseKeyThread() {
   return window['go']['service']['Keyboard']['ParseKeyThread']();
 }
 
+export function ParseStartThread() {
+  return window['go']['service']['Keyboard']['ParseStartThread']();
+}
+
+export function ParseStopThread() {
+  return window['go']['service']['Keyboard']['ParseStopThread']();
+}
+
 export function StartKeyThread() {
   return window['go']['service']['Keyboard']['StartKeyThread']();
 }

@@ -12,6 +12,9 @@
   <audio id="stopMp3" controls style="display: none">
     <source src="../../../public/stop.mp3" type="audio/mpeg">
   </audio>
+  <audio id="remind" controls style="display: none">
+    <source src="../../../public/remind.mp3" type="audio/mpeg">
+  </audio>
 
   <div class="header" :style="{backgroundColor:isRunning?'#f5222d':'#409EFF',}">
     <div style="margin-left: 10px;">
@@ -163,24 +166,27 @@ import {SyncFrontParse, SyncFrontStart, SyncFrontStop} from "../../../wailsjs/go
 import Info from "../info/Info.vue";
 import Setting from "../setting/Setting.vue";
 
-const vk:any = {'1': 201,'2': 202,'3': 203,'4': 204,'5': 205,'6': 206,'7': 207,'8': 208,'9': 209,'0': 210,
-    'a': 401,'b': 505,'c': 503,'d': 403,'e': 303,'f': 404, 'g': 405,'h': 406,'i': 308,'j': 407, 'k': 408,
-    'l': 409,'m': 507,'n': 506,'o': 309,'p': 310,'q': 301,'r': 304, 's': 402,'t': 305,'u': 307,'v': 504,
-    'w': 302, 'x': 502,'y': 306,  'z': 501,   '[': 311, '.': 509, ',': 508, ']': 312, '/': 510,
-    "'": 411, '\\': 313,  '`': 200,  '-': 211, '=': 212,  ';': 410,
-    'F1':101,'F2':102,'F3':103,'F4':104,'F5':105,'F6':106,'F7':107,'F8':108,'F9':109,'F10':110,'F11':111,
-    'CapsLock':400,'Shift':500,'Ctrl':600,'Alt':602,'Tab':300,"ScrollLock":701,'pause':702,'Insert':703,'Home':704,'PageUp':705,'Delete':706,'End':707,'PageDown':708,
-    'ArrowUp':709,'ArrowLeft':710,'ArrowDown':711,'ArrowRight':712}
+const vk:any = {
+  '`': 200,'1': 201,'2': 202,'3': 203,'4': 204,'5': 205,'6': 206,'7': 207,'8': 208,'9': 209,'0': 210,
+  'a': 401,'b': 505,'c': 503,'d': 403,'e': 303,'f': 404, 'g': 405,'h': 406,'i': 308,'j': 407, 'k': 408, 'l': 409,'m': 507,'n': 506,
+  'o': 309,'p': 310,'q': 301,'r': 304, 's': 402,'t': 305,'u': 307,'v': 504, 'w': 302, 'x': 502,'y': 306,  'z': 501,
+  'F1':101,'F2':102,'F3':103,'F4':104,'F5':105,'F6':106,'F7':107,'F8':108,'F9':109,'F10':110,'F11':111,
+  '[': 311, ']': 312,  '.': 509, ',': 508,'/': 510, "'": 411, '\\': 313, '-': 211, '=': 212,  ';': 410,
+  'CapsLock':400,'Tab':300,"ScrollLock":701,'Pause':702,'Insert':703,'Home':704,'PageUp':705,'Delete':706,'End':707,'PageDown':708,
+  'ArrowUp':709,'ArrowLeft':710,'ArrowDown':711,'ArrowRight':712}
+
+
 const vq:any = {
-  '0':'48', '1':'49', '2':'50', '3':'51', '4':'52', '5':'53', '6':'54', '7':'55', '8':'56', '9':'57',
-  'A':'65', 'B':'66', 'C':'67', 'D':'68', 'E':'69', 'F':'70', 'G':'71', 'H':'72', 'I':'73', 'J':'74', 'K':'75', 'L':'76', 'M':'77', 'N':'78',
-  'O':'79', 'P':'80', 'Q':'81', 'R':'82', 'S':'83', 'T':'84', 'U':'85', 'V':'86', 'W':'87', 'X':'88', 'Y':'89', 'Z':'90',
+  '`':'192','1':'49', '2':'50', '3':'51', '4':'52', '5':'53', '6':'54', '7':'55', '8':'56', '9':'57','0':'48',
+  'a':'65', 'b':'66', 'c':'67', 'd':'68', 'e':'69', 'f':'70', 'g':'71', 'h':'72', 'i':'73', 'j':'74', 'k':'75', 'l':'76', 'm':'77', 'n':'78',
+  'o':'79', 'p':'80', 'q':'81', 'r':'82', 's':'83', 't':'84', 'u':'85', 'v':'86', 'w':'87', 'x':'88', 'y':'89', 'z':'90',
   'F1':'112', 'F2':'113', 'F3':'114', 'F4':'115', 'F5':'116', 'F6':'117', 'F7':'118', 'F8':'119', 'F9':'120', 'F10':'121', 'F11':'122',
-  '-':'189', '+':'187', '~':'192', '\\':'220', ';':'186', '\'(引号)':'222', '[':'219', ']':'221', '，':'188', '。':'190', '/':'191',
-  'Left':'37', 'Right':'39', 'Up':'38', 'Down':'40',
-  'Left Alt':'164', 'Right Alt':'165', 'Left Ctrl':'162', 'Right Ctrl':'163', 'Left Shift':'160', 'Right Shift':'161',
-  'PrtSc':'44', 'ScrollLock':'145', 'Pause':'19', 'Insert':'45', 'Delete':'46', 'Home':'36', 'End':'35', 'PgUp':'33', 'PgDown':'34',
-  '鼠标侧键1': '904', '鼠标侧键2': '905', '滚轮上': '906', '滚轮下': '908', '空': "99999"}
+  '[':'219', ']':'221','.':'190', ',':'188', '/':'191','\'':'222', '\\':'220', '-':'189', '=':'187',   ';':'186',
+  'CapsLock':'20','Tab':'9', 'ScrollLock':'145', 'Pause':'19', 'Insert':'45','Home':'36', 'PageUp':'33','Delete':'46','End':'35','PageDown':'34',
+  'ArrowUp':'38','ArrowLeft':'37','ArrowDown':'40', 'ArrowRight':'39',
+
+  'Left Alt':'164', 'Left Ctrl':'162', 'Left Shift':'160','Right Alt':'165','Right Ctrl':'163','Right Shift':'161',
+  '鼠标侧键1': '904', '鼠标侧键2': '905','鼠标中键':'903', '滚轮上': '906', '滚轮下': '908', '空': "99999",'PrtSc':'44'}
 
   const isDel = ref(false)
   const start = ref("")
@@ -193,8 +199,7 @@ const vq:any = {
 
   const modelOption = ref([
     {label: '顺序模式',value: 0},
-    {label: '连发模式',value: 1},
-    // {label: '按压模式',value: 2}
+    {label: '连发模式',value: 1}
   ])
 
   const preKey = ref("")
@@ -207,6 +212,7 @@ const vq:any = {
   let setStopAudio: HTMLAudioElement
   let selectStart:HTMLAudioElement
   let selectStop:HTMLAudioElement
+  let remind:HTMLAudioElement
 
   const initWindowPosition = () => {
     let x = localStorage.getItem("x") || ""
@@ -293,7 +299,7 @@ const vq:any = {
         return ;
       }
     }
-    keyList.value.push({name:preKey.value,value:vk[preKey.value],used:true,key_ms:"0"})
+    keyList.value.push({name:preKey.value,value:vk[preKey.value],key_value:vq[preKey.value],used:true,key_ms:"0"})
     onSaveKey()
   }
 
@@ -354,7 +360,7 @@ const vq:any = {
 
   //修改延迟值事件
   const changeMs = (val: { name: any;key_ms:number })=>{
-    ElMessageBox.prompt(`当前值：${val.key_ms} (连发模式生效)`,`键[${val.name}]的间隔时间`, {
+    ElMessageBox.prompt(`当前值：${val.key_ms} (需打开独立延迟开关)`,`键[${val.name}]的间隔时间`, {
       confirmButtonText: '确定',
       cancelButtonText: '取消',
       inputPattern:
@@ -399,7 +405,7 @@ const vq:any = {
     let temp = []
     for (let i = 0; i < keyList.value.length; i++) {
       if (Boolean(keyList.value[i].used)) {
-        temp.push({key:keyList.value[i].value,key_ms:keyList.value[i].key_ms})
+        temp.push({key:keyList.value[i].value,key_ms:keyList.value[i].key_ms,key_value:keyList.value[i].key_value})
       }
     }
     await SyncFrontKey(JSON.stringify(temp))
@@ -440,7 +446,7 @@ const vq:any = {
   }
 
   const changeVolume = (val:number)=>{
-    setStartAudio.volume = setStopAudio.volume = startAudio.volume = stopAudio.volume = val/100
+    remind.volume = setStartAudio.volume = setStopAudio.volume = startAudio.volume = stopAudio.volume = val/100
     localStorage.setItem("volume",String(val))
   }
   const changeMusic = (start:string,stop:string)=>{
@@ -482,7 +488,7 @@ const vq:any = {
     let stopMusic = localStorage.getItem("stopMusic")||""
     changeMusic(startMusic,stopMusic)
     const volume = localStorage.getItem("volume")||"50"
-    setStartAudio.volume = setStopAudio.volume = startAudio.volume = stopAudio.volume = Number(volume)/100
+    remind.volume = setStartAudio.volume = setStopAudio.volume = startAudio.volume = stopAudio.volume = Number(volume)/100
   }
 
   //初始化驱动文件
@@ -535,6 +541,7 @@ const vq:any = {
     stopAudio = document.getElementById('stopMp3') as HTMLAudioElement; // 强制转换为 HTMLAudioElement
     setStartAudio = document.getElementById('setStartMp3') as HTMLAudioElement; // 强制转换为 HTMLAudioElement
     setStopAudio = document.getElementById('setStopMp3') as HTMLAudioElement; // 强制转换为 HTMLAudioElement
+    remind = document.getElementById('remind') as HTMLAudioElement; // 强制转换为 HTMLAudioElement
   }
 
   const addEventListener = () => {
@@ -546,14 +553,14 @@ const vq:any = {
       isRunning.value = false
       playMusic(false)
     })
+    EventsOn("change-key",()=>{
+      remind.pause()
+      remind.currentTime = 0
+      remind.play()
+    })
   }
 
   onMounted( ()=>{
-    const loading = ElLoading.service({
-      lock: true,
-      text: '正在加载，请稍后',
-      background: 'rgba(255, 255, 255, 0.9)',
-    })
     initStartAndStopElement()
     initVolume()
     initKeys()
@@ -563,7 +570,6 @@ const vq:any = {
     syncParseType()
     syncDisabled()
     addEventListener()
-    loading.close()
   })
 </script>
 <style lang="less" scoped>
