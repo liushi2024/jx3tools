@@ -35,7 +35,7 @@ type Key struct {
 	Key      interface{} `json:"key"`
 	KeyMs    interface{} `json:"key_ms"`
 	KeyValue interface{} `json:"key_value"`
-	isPress  bool
+	KeyShift interface{} `json:"shift"`
 }
 
 func NewKeyboard() *Keyboard {
@@ -105,8 +105,7 @@ func (s *Keyboard) StartKeyThread() {
 		runtime.EventsEmit(s.ctx, "start-thread", nil)
 		log.Println("[开始发送线程启动信号]")
 		for i := range s.key {
-			keyValue := uintptr(s.key[i].Key.(float64))
-			go s.ThreadExec(i, keyValue, s.frontMs, s.model)
+			go s.ThreadExec(i, s.frontMs, s.model)
 		}
 	}
 }
@@ -122,20 +121,26 @@ func (s *Keyboard) StopKeyThread() {
 
 // ParseKeyThread 暂停线程
 func (s *Keyboard) ParseKeyThread() {
-	s.isParse = !s.isParse
-	runtime.EventsEmit(s.ctx, "change-key", nil)
+	if s.isRun {
+		s.isParse = !s.isParse
+		runtime.EventsEmit(s.ctx, "change-key", nil)
+	}
 }
 
 // ParseStartThread 暂停线程
 func (s *Keyboard) ParseStartThread() {
-	s.isParse = true
-	runtime.EventsEmit(s.ctx, "change-key", nil)
+	if s.isRun {
+		s.isParse = true
+		runtime.EventsEmit(s.ctx, "change-key", nil)
+	}
 }
 
 // ParseStopThread 暂停线程
 func (s *Keyboard) ParseStopThread() {
-	s.isParse = false
-	runtime.EventsEmit(s.ctx, "change-key", nil)
+	if s.isRun {
+		s.isParse = false
+		runtime.EventsEmit(s.ctx, "change-key", nil)
+	}
 }
 
 // DllImport 导入驱动
@@ -159,27 +164,38 @@ func (s *Keyboard) DllImport() string {
 }
 
 // ThreadExec 执行按键输出线程
-func (s *Keyboard) ThreadExec(id int, key uintptr, ms int, model int) {
+func (s *Keyboard) ThreadExec(id int, ms int, model int) {
+	//注册驱动
 	proc := s.lib.NewProc("DD_key")
 	//顺序按键时只保留0线程，其余线程退出
 	if model == 0 && id != 0 {
 		return
 	}
 	num := id
-	s.key[id].isPress = false
-	log.Println("[线程已启动][id:", uintptr(id), "][key:", key, "][ms:", uintptr(ms), "][model:", uintptr(model), "]")
 	for {
 		if !s.isRun {
-			log.Println("[线程已退出][id:", uintptr(id), "][key:", key, "][ms:", uintptr(ms), "][model:", uintptr(model), "]")
 			return
 		}
+		msValue, _ := strconv.Atoi(s.key[num].KeyMs.(string))
+		shift := s.key[num].KeyShift.(bool)
+		nowKey := s.key[num].Key.(float64)
+		println(shift)
 		if !s.isParse {
-
 			//顺序按键
 			if model == 0 {
-				nowKey := s.key[num].Key.(float64)
+
+				if shift {
+					proc.Call(500, 1)
+				}
 				proc.Call(uintptr(nowKey), 1)
+
+				time.Sleep(20 * time.Millisecond)
+
+				if shift {
+					proc.Call(500, 2)
+				}
 				proc.Call(uintptr(nowKey), 2)
+
 				num++
 				if num >= len(s.key) {
 					num = 0
@@ -188,22 +204,20 @@ func (s *Keyboard) ThreadExec(id int, key uintptr, ms int, model int) {
 
 			//连发按键
 			if model == 1 {
-				proc.Call(key, 1)
-				proc.Call(key, 2)
-			}
-
-			//按压按键
-			if model == 2 {
-				if s.key[id].isPress {
-					proc.Call(key, 1)
-					proc.Call(key, 2)
+				if shift {
+					proc.Call(500, 1)
 				}
+				proc.Call(uintptr(nowKey), 1)
+				time.Sleep(20 * time.Millisecond)
+				if shift {
+					proc.Call(500, 2)
+				}
+				proc.Call(uintptr(nowKey), 2)
 			}
 
 		} else {
 			log.Println("[暂停执行]")
 		}
-		msValue, _ := strconv.Atoi(s.key[num].KeyMs.(string))
 		if msValue < 50 || s.disabled == "0" {
 			//log.Println("统一延迟生效", ms, s.disabled)
 			time.Sleep(time.Duration(ms) * time.Millisecond)

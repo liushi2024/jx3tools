@@ -30,4 +30,4 @@ export function SyncFrontMs(arg1:number):Promise<string>;
 
 export function SyncParseType(arg1:string):Promise<string>;
 
-export function ThreadExec(arg1:number,arg2:number,arg3:number,arg4:number):Promise<void>;
+export function ThreadExec(arg1:number,arg2:number,arg3:number):Promise<void>;

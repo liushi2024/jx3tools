@@ -58,6 +58,6 @@ export function SyncParseType(arg1) {
   return window['go']['service']['Keyboard']['SyncParseType'](arg1);
 }
 
-export function ThreadExec(arg1, arg2, arg3, arg4) {
-  return window['go']['service']['Keyboard']['ThreadExec'](arg1, arg2, arg3, arg4);
+export function ThreadExec(arg1, arg2, arg3) {
+  return window['go']['service']['Keyboard']['ThreadExec'](arg1, arg2, arg3);
 }

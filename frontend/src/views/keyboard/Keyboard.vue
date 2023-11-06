@@ -52,7 +52,8 @@
         </el-table-column>
         <el-table-column prop="name" label="键符" width="50" align="center" show-overflow-tooltip>
           <template #default="scope">
-            <el-link>{{scope.row.name}}</el-link>
+            <el-link :disabled="isRunning" v-if="!scope.row.shift" type="primary" @click="setShift(scope.row)">{{scope.row.name}}</el-link>
+            <el-link :disabled="isRunning" v-else type="danger" @click="setShift(scope.row)">{{scope.row.name}}</el-link>
           </template>
         </el-table-column>
         <el-table-column prop="status" label="操作" align="center"  show-overflow-tooltip>
@@ -168,8 +169,8 @@ import Setting from "../setting/Setting.vue";
 
 const vk:any = {
   '`': 200,'1': 201,'2': 202,'3': 203,'4': 204,'5': 205,'6': 206,'7': 207,'8': 208,'9': 209,'0': 210,
-  'a': 401,'b': 505,'c': 503,'d': 403,'e': 303,'f': 404, 'g': 405,'h': 406,'i': 308,'j': 407, 'k': 408, 'l': 409,'m': 507,'n': 506,
-  'o': 309,'p': 310,'q': 301,'r': 304, 's': 402,'t': 305,'u': 307,'v': 504, 'w': 302, 'x': 502,'y': 306,  'z': 501,
+  'A': 401,'B': 505,'C': 503,'D': 403,'E': 303,'F': 404, 'G': 405,'H': 406,'I': 308,'J': 407, 'K': 408, 'L': 409,'M': 507,'N': 506,
+  'O': 309,'P': 310,'Q': 301,'R': 304, 'S': 402,'T': 305,'U': 307,'V': 504, 'W': 302, 'X': 502,'Y': 306,  'Z': 501,
   'F1':101,'F2':102,'F3':103,'F4':104,'F5':105,'F6':106,'F7':107,'F8':108,'F9':109,'F10':110,'F11':111,
   '[': 311, ']': 312,  '.': 509, ',': 508,'/': 510, "'": 411, '\\': 313, '-': 211, '=': 212,  ';': 410,
   'CapsLock':400,'Tab':300,"ScrollLock":701,'Pause':702,'Insert':703,'Home':704,'PageUp':705,'Delete':706,'End':707,'PageDown':708,
@@ -178,8 +179,8 @@ const vk:any = {
 
 const vq:any = {
   '`':'192','1':'49', '2':'50', '3':'51', '4':'52', '5':'53', '6':'54', '7':'55', '8':'56', '9':'57','0':'48',
-  'a':'65', 'b':'66', 'c':'67', 'd':'68', 'e':'69', 'f':'70', 'g':'71', 'h':'72', 'i':'73', 'j':'74', 'k':'75', 'l':'76', 'm':'77', 'n':'78',
-  'o':'79', 'p':'80', 'q':'81', 'r':'82', 's':'83', 't':'84', 'u':'85', 'v':'86', 'w':'87', 'x':'88', 'y':'89', 'z':'90',
+  'A':'65', 'B':'66', 'C':'67', 'D':'68', 'E':'69', 'F':'70', 'G':'71', 'H':'72', 'I':'73', 'J':'74', 'K':'75', 'L':'76', 'M':'77', 'N':'78',
+  'O':'79', 'P':'80', 'Q':'81', 'R':'82', 'S':'83', 'T':'84', 'U':'85', 'V':'86', 'W':'87', 'X':'88', 'Y':'89', 'Z':'90',
   'F1':'112', 'F2':'113', 'F3':'114', 'F4':'115', 'F5':'116', 'F6':'117', 'F7':'118', 'F8':'119', 'F9':'120', 'F10':'121', 'F11':'122',
   '[':'219', ']':'221','.':'190', ',':'188', '/':'191','\'':'222', '\\':'220', '-':'189', '=':'187',   ';':'186',
   'CapsLock':'20','Tab':'9', 'ScrollLock':'145', 'Pause':'19', 'Insert':'45','Home':'36', 'PageUp':'33','Delete':'46','End':'35','PageDown':'34',
@@ -274,7 +275,7 @@ const vq:any = {
       if(event.key == "Escape"){
         return;
       }
-      preKey.value = event.key
+      preKey.value = event.key >= 'a' && event.key <= 'z'?event.key.toUpperCase():event.key
     }
   }
 
@@ -299,7 +300,7 @@ const vq:any = {
         return ;
       }
     }
-    keyList.value.push({name:preKey.value,value:vk[preKey.value],key_value:vq[preKey.value],used:true,key_ms:"0"})
+    keyList.value.push({name:preKey.value,value:vk[preKey.value],key_value:vq[preKey.value],used:true,key_ms:"0",shift:false})
     onSaveKey()
   }
 
@@ -379,6 +380,16 @@ const vq:any = {
         .catch(() => {})
   }
 
+  const setShift = (val: any)=>{
+    val.shift = !val.shift
+    if(val.shift){
+      ElMessage.success(`${val.name}设置为组合键`)
+    } else {
+      ElMessage.success(`${val.name}组合键已取消`)
+    }
+    onSaveKey()
+  }
+
   //删除键符事件
   const onDelKey=async (value: { name: any; }) => {
     for (let i = 0; i < keyList.value.length; i++) {
@@ -405,7 +416,7 @@ const vq:any = {
     let temp = []
     for (let i = 0; i < keyList.value.length; i++) {
       if (Boolean(keyList.value[i].used)) {
-        temp.push({key:keyList.value[i].value,key_ms:keyList.value[i].key_ms,key_value:keyList.value[i].key_value})
+        temp.push({key:keyList.value[i].value,key_ms:keyList.value[i].key_ms,key_value:keyList.value[i].key_value,shift:keyList.value[i].shift})
       }
     }
     await SyncFrontKey(JSON.stringify(temp))
